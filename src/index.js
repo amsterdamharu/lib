@@ -141,3 +141,62 @@ Promise.all(
   x=>console.log("resolved:",x)
   ,reject=>console.error("rejected",reject)
 )
+
+
+
+
+/**
+ * playing with service worker, maybe send more message types
+ * a type to change fetch strategy (cache, whatever first, only fetch no cache, always fetch)
+ * 
+ */
+if('serviceWorker' in navigator){
+  // Register service worker
+  navigator.serviceWorker.register('/service-worker.js')
+  .then(
+    reg =>
+      console.log("SW registration succeeded. Scope is "+reg.scope)
+    ,err =>
+      console.error("SW registration failed with error "+err)
+  );
+}
+
+const send_message_to_sw = (msg) =>
+  new Promise(
+    (resolve, reject) => {
+      // Create a Message Channel
+      const msg_chan = new MessageChannel();
+
+      // Handler for recieving message reply from service worker
+      msg_chan.port1.onmessage = (event) => {
+          if(event.data.error){
+              reject(event.data.error);
+          }else{
+              resolve(event.data);
+          }
+      };
+
+      // Send message to service worker along with port for reply
+      navigator.serviceWorker.controller.postMessage(
+        msg
+        , [msg_chan.port2]
+      );
+  }
+);
+
+document.body.addEventListener(
+  "click"
+  ,()=>
+    send_message_to_sw(
+      {
+        action:"delete"
+        ,cache:/^v1$/
+        ,url:/.*bundle.js$/
+      }
+    )
+    .then(
+      (msg)=>
+        console.log("deleted:",msg)
+    )
+);
+window.send_message_to_sw = send_message_to_sw;

@@ -2,8 +2,8 @@
   "private": true,
   "scripts": {
     "build": "webpack -p",
-    "start": "webpack-dev-server ./src/main.js --hot --inline --content-base ./static",
-    "debug": "node --inspect --debug-brk ./node_modules/webpack-dev-server/bin/webpack-dev-server.js ./src/main.js --hot --inline --content-base ./static",
+    "start": "webpack-dev-server ./src/index.js --hot --inline --content-base ./static",
+    "debug": "node --inspect --debug-brk ./node_modules/webpack-dev-server/bin/webpack-dev-server.js ./src/index.js --hot --inline --content-base ./static",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
