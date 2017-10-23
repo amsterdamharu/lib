@@ -9,7 +9,7 @@ x =>
   (x!==undefined && typeof x.then === "function")
 ;
 
-//not exported, if x is promese then fn is called with the
+//not exported, if x is promise then fn is called with the
 //  resolve of x
 const ifPromise =
   (fn) =>
@@ -85,7 +85,7 @@ const throttle =
     var que = [];
     var running = 0;
     const wait = function*(resolve,fn,arg){
-      return resolve(fn(arg));
+      return resolve(ifPromise(fn)(arg));
     };
     const nextInQue = ()=>{
       const it = que[0];
