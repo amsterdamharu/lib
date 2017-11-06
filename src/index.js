@@ -112,37 +112,133 @@ const throttle =
     };    
   }
 ;
+/**
+ * Resolves whatever promises resolves first and rejects if all promises reject
+ * with an array of rejected values in the same order as passed promises
+ * or rejects when an empty array is passed
+ * Not all values in the array need to be promises but anyPromise will resolve
+ * with the first value that is not a promise if there are any.
+ * @todo: array of rejected values does not have same order as passed promises
+ * @param {Any[]} promises 
+ * @returns {Promise.<Any>}
+ */
+const anyPromise = (promises) =>{
+  let rec = (promises,rejected) =>
+    (
+      (promises.length === 0 && rejected.length === 0)
+    )
+      ? Promise.reject("Empty promises array passed.")
+      : (promises.length === 0)
+        ? Promise.reject(rejected)
+        : Promise.race(
+            promises.map(
+              (p,index) => 
+                new Promise(
+                  (resolve,reject) =>
+                    p.then(
+                      x => resolve([x,index])
+                      ,y => reject([y,index])
+                    )          
+                )
+            )
+          )
+          .then(
+            ([ok,index]) => 
+              ok
+            ,([no,index]) =>
+              rec(
+                promises
+                  .filter((p,i)=>i!==index)
+                ,rejected.concat(no)
+              )
+          )
+  ;
+  return rec(
+    (promises || [])
+      .map(x => Promise.resolve(x))
+    ,[]
+  );
+};
+
+//testing anyPromise
+const later = (resolveValue,time=500)=>
+  new Promise(
+    (resolve,reject)=>
+      setTimeout(
+        x => resolve(resolveValue)
+        ,time
+      )
+  )
+;
+const rejectLater = (rejectValue,time=500)=>
+new Promise(
+  (resolve,reject)=>
+    setTimeout(
+      x => reject(rejectValue)
+      ,time
+    )
+)
+;
+
+const testAnyPromise = () => {
+  const resolve = index => resolve=>console.info(`anyPromise RESOLVED ${index}:`,resolve)
+  ,reject = index => reject=>console.error(`anyPromse ${index} REJECTED:`,reject);
+  [
+    undefined
+    ,[later(1,100),2,3,4,5,6]
+    ,[rejectLater("not 1",200)]
+    ,[rejectLater("not 1",200),rejectLater("not 2",400)]
+    ,[rejectLater("not 1",200),later(2,400),rejectLater("not 3",600)]
+    ,[later(1,800),later(2,400),later(3,600)]
+    ,[rejectLater("not 1",200),later(2,400),later(3,600)]
+    ,[1,2,3,4,5,6,7,8,9]
+      .map(
+        x => rejectLater(`not ${x}`,x*100)
+      )
+    ,[1,2,3,4,5,6,7,8,9]
+      .map(
+        x => rejectLater(`not ${x}`,x*100)
+      )
+      .concat(later(10,1000))
+  ]
+  .forEach(
+    (promises,index) => anyPromise(promises)
+    .then(resolve(index+1),reject(index+1))
+  );
+};
+testAnyPromise();
 
 // testing throttle
-const max2=throttle(2)
-const tests = [1,2,3,4,5,6,7,8,9,10]
-const numTofn =
-  x =>
-    arg=>(
-      console.log("starting:",x) ||
-      new Promise(
-        r=>setTimeout(
-          x=>(
-            console.log("resolved:",arg)||
-            r(arg)
+const testThrottle = () => {
+  const max2=throttle(2)
+  const tests = [1,2,3,4,5,6,7,8,9,10]
+  const numTofn =
+    x =>
+      arg=>(
+        console.log("starting:",x) ||
+        new Promise(
+          r=>setTimeout(
+            x=>(
+              console.log("resolved:",arg)||
+              r(arg)
+            )
+            ,((tests.length*100)-(x*100))
           )
-          ,((tests.length*100)-(x*100))
         )
       )
-    )
-;
-Promise.all(
-  tests
-  .map(numTofn)
-  .map(x => max2(x))
-  .map((v,i)=>v(++i))
-)
-.then(
-  x=>console.log("resolved:",x)
-  ,reject=>console.error("rejected",reject)
-)
-
-
+  ;
+  Promise.all(
+    tests
+    .map(numTofn)
+    .map(x => max2(x))
+    .map((v,i)=>v(++i))
+  )
+  .then(
+    x=>console.log("resolved:",x)
+    ,reject=>console.error("rejected",reject)
+  )
+}
+// testThrottle();
 
 
 /**
@@ -150,53 +246,53 @@ Promise.all(
  * a type to change fetch strategy (cache, whatever first, only fetch no cache, always fetch)
  * 
  */
-if('serviceWorker' in navigator){
-  // Register service worker
-  navigator.serviceWorker.register('/service-worker.js')
-  .then(
-    reg =>
-      console.log("SW registration succeeded. Scope is "+reg.scope)
-    ,err =>
-      console.error("SW registration failed with error "+err)
-  );
-}
+// if('serviceWorker' in navigator){
+//   // Register service worker
+//   navigator.serviceWorker.register('/service-worker.js')
+//   .then(
+//     reg =>
+//       console.log("SW registration succeeded. Scope is "+reg.scope)
+//     ,err =>
+//       console.error("SW registration failed with error "+err)
+//   );
+// }
 
-const send_message_to_sw = (msg) =>
-  new Promise(
-    (resolve, reject) => {
-      // Create a Message Channel
-      const msg_chan = new MessageChannel();
+// const send_message_to_sw = (msg) =>
+//   new Promise(
+//     (resolve, reject) => {
+//       // Create a Message Channel
+//       const msg_chan = new MessageChannel();
 
-      // Handler for recieving message reply from service worker
-      msg_chan.port1.onmessage = (event) => {
-          if(event.data.error){
-              reject(event.data.error);
-          }else{
-              resolve(event.data);
-          }
-      };
+//       // Handler for recieving message reply from service worker
+//       msg_chan.port1.onmessage = (event) => {
+//           if(event.data.error){
+//               reject(event.data.error);
+//           }else{
+//               resolve(event.data);
+//           }
+//       };
 
-      // Send message to service worker along with port for reply
-      navigator.serviceWorker.controller.postMessage(
-        msg
-        , [msg_chan.port2]
-      );
-  }
-);
+//       // Send message to service worker along with port for reply
+//       navigator.serviceWorker.controller.postMessage(
+//         msg
+//         , [msg_chan.port2]
+//       );
+//   }
+// );
 
-document.body.addEventListener(
-  "click"
-  ,()=>
-    send_message_to_sw(
-      {
-        action:"delete"
-        ,cache:/^v1$/
-        ,url:/.*bundle.js$/
-      }
-    )
-    .then(
-      (msg)=>
-        console.log("deleted:",msg)
-    )
-);
-window.send_message_to_sw = send_message_to_sw;
+// document.body.addEventListener(
+//   "click"
+//   ,()=>
+//     send_message_to_sw(
+//       {
+//         action:"delete"
+//         ,cache:/^v1$/
+//         ,url:/.*bundle.js$/
+//       }
+//     )
+//     .then(
+//       (msg)=>
+//         console.log("deleted:",msg)
+//     )
+// );
+// window.send_message_to_sw = send_message_to_sw;
