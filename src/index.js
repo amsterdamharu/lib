@@ -118,45 +118,48 @@ const throttle =
  * or rejects when an empty array is passed
  * Not all values in the array need to be promises but anyPromise will resolve
  * with the first value that is not a promise if there are any.
- * @todo: array of rejected values does not have same order as passed promises
  * @param {Any[]} promises 
  * @returns {Promise.<Any>}
  */
 const anyPromise = (promises) =>{
   let rec = (promises,rejected) =>
-    (
-      (promises.length === 0 && rejected.length === 0)
-    )
-      ? Promise.reject("Empty promises array passed.")
-      : (promises.length === 0)
-        ? Promise.reject(rejected)
-        : Promise.race(
-            promises.map(
-              (p,index) => 
-                new Promise(
-                  (resolve,reject) =>
-                    p.then(
-                      x => resolve([x,index])
-                      ,y => reject([y,index])
-                    )          
-                )
-            )
-          )
-          .then(
-            ([ok,index]) => 
-              ok
-            ,([no,index]) =>
-              rec(
-                promises
-                  .filter((p,i)=>i!==index)
-                ,rejected.concat(no)
+    (promises.length === 0)
+      ? Promise.reject(rejected)
+      : Promise.race(
+          promises.map(
+            ([p,orgIndex],index) =>
+              new Promise(
+                (resolve,reject) =>
+                  p.then(
+                    x => resolve(x)
+                    ,y => reject([y,orgIndex,index])
+                  )
               )
           )
+        )
+        .then(
+          ok => 
+            ok
+          ,([no,orgIndex,index]) =>{
+            rejected[orgIndex] = no;
+            return rec(
+              promises
+                .filter((p,i)=>i!==index)
+              ,rejected
+            );
+          }
+        )
   ;
+  if(!Array.isArray(promises)){
+    return Promise.reject("The parameter passed should be an array");
+  }
+  if(promises.length === 0){
+    return Promise.reject("Empty array passed as promises, do not know how to resolve this.");
+  }
   return rec(
-    (promises || [])
-      .map(x => Promise.resolve(x))
-    ,[]
+    promises
+      .map((x,index) => [Promise.resolve(x),index])
+    ,promises.map(x=>"wuh?")
   );
 };
 
@@ -181,16 +184,17 @@ new Promise(
 ;
 
 const testAnyPromise = () => {
-  const resolve = index => resolve=>console.info(`anyPromise RESOLVED ${index}:`,resolve)
-  ,reject = index => reject=>console.error(`anyPromse ${index} REJECTED:`,reject);
+  const resolve = index => resolve=>console.log(`anyPromise RESOLVED ${index}:`,resolve)
+  ,reject = index => reject=>console.warn(`anyPromse ${index} REJECTED:`,reject);
   [
     undefined
+    ,[]
     ,[later(1,100),2,3,4,5,6]
     ,[rejectLater("not 1",200)]
-    ,[rejectLater("not 1",200),rejectLater("not 2",400)]
-    ,[rejectLater("not 1",200),later(2,400),rejectLater("not 3",600)]
+    ,[rejectLater("not 1",600),later(2,400),rejectLater("not 3",200)]
     ,[later(1,800),later(2,400),later(3,600)]
     ,[rejectLater("not 1",200),later(2,400),later(3,600)]
+    ,[rejectLater("not 1",600),rejectLater("not 2",200),rejectLater("not 3",400)]
     ,[1,2,3,4,5,6,7,8,9]
       .map(
         x => rejectLater(`not ${x}`,x*100)
@@ -235,7 +239,7 @@ const testThrottle = () => {
   )
   .then(
     x=>console.log("resolved:",x)
-    ,reject=>console.error("rejected",reject)
+    ,reject=>console.warn("rejected",reject)
   )
 }
 // testThrottle();
