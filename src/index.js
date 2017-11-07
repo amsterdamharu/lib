@@ -163,54 +163,11 @@ const anyPromise = (promises) =>{
   );
 };
 
-//testing anyPromise
-const later = (resolveValue,time=500)=>
-  new Promise(
-    (resolve,reject)=>
-      setTimeout(
-        x => resolve(resolveValue)
-        ,time
-      )
-  )
-;
-const rejectLater = (rejectValue,time=500)=>
-new Promise(
-  (resolve,reject)=>
-    setTimeout(
-      x => reject(rejectValue)
-      ,time
-    )
-)
-;
-
-const testAnyPromise = () => {
-  const resolve = index => resolve=>console.log(`anyPromise RESOLVED ${index}:`,resolve)
-  ,reject = index => reject=>console.warn(`anyPromse ${index} REJECTED:`,reject);
-  [
-    undefined
-    ,[]
-    ,[later(1,100),2,3,4,5,6]
-    ,[rejectLater("not 1",200)]
-    ,[rejectLater("not 1",600),later(2,400),rejectLater("not 3",200)]
-    ,[later(1,800),later(2,400),later(3,600)]
-    ,[rejectLater("not 1",200),later(2,400),later(3,600)]
-    ,[rejectLater("not 1",600),rejectLater("not 2",200),rejectLater("not 3",400)]
-    ,[1,2,3,4,5,6,7,8,9]
-      .map(
-        x => rejectLater(`not ${x}`,x*100)
-      )
-    ,[1,2,3,4,5,6,7,8,9]
-      .map(
-        x => rejectLater(`not ${x}`,x*100)
-      )
-      .concat(later(10,1000))
-  ]
-  .forEach(
-    (promises,index) => anyPromise(promises)
-    .then(resolve(index+1),reject(index+1))
-  );
+export { 
+  compose
+  ,throttle
+  ,anyPromise
 };
-testAnyPromise();
 
 // testing throttle
 const testThrottle = () => {
