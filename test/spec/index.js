@@ -274,13 +274,44 @@ describe("throtle",function() {
 });
 
 describe("compose",function() {
-  //@todo: test compose with mix of promises and regular values
-  //@todo: test compose with mix of promises and regular values having a promise fail (make sure it skips calling other functions after failing)
   it(
-    "TODO: create test"
+    "Should not resolve as promise if all functions are sync"
+    , () => {
+      expect(
+        lib.compose([
+          x=>x+1
+          ,x=>x+2
+          ,x=>x+3
+        ])(0)
+      ).toBe(6);
+    }
+  );
+  it(
+    "Should resolve as promise if some are promises"
     , done => {
-      expect("TODO: implement this test").toBe("");
-      done();
+      lib.compose([
+        x=>later(x+1,50)
+        ,x=>x+2
+        ,x=>x+3
+      ])(0)
+      .then(
+        resolve(x=>expect(x).toBe(6))(done)
+        ,shouldNotReject
+      )
+    }
+  );
+  it(
+    "Should skip other functions if a function returns a rejected promise"
+    , done => {
+      lib.compose([
+        x=>x+1
+        ,x=>rejectLater(x,50)
+        ,x=>expect("This function should not be called").toBe(false)
+      ])(0)
+      .then(
+        resolve(x=>expect("Should not resolve").toBe(false))(done)
+        ,reject(x=>expect(x).not.toBeNull())(done)
+      )
     }
   );
 })
