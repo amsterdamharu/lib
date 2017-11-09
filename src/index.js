@@ -169,37 +169,6 @@ export {
   ,anyPromise
 };
 
-// testing throttle
-const testThrottle = () => {
-  const max2=throttle(2)
-  const tests = [1,2,3,4,5,6,7,8,9,10]
-  const numTofn =
-    x =>
-      arg=>(
-        console.log("starting:",x) ||
-        new Promise(
-          r=>setTimeout(
-            x=>(
-              console.log("resolved:",arg)||
-              r(arg)
-            )
-            ,((tests.length*100)-(x*100))
-          )
-        )
-      )
-  ;
-  Promise.all(
-    tests
-    .map(numTofn)
-    .map(x => max2(x))
-    .map((v,i)=>v(++i))
-  )
-  .then(
-    x=>console.log("resolved:",x)
-    ,reject=>console.warn("rejected",reject)
-  )
-}
-// testThrottle();
 
 
 /**

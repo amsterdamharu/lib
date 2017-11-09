@@ -18,24 +18,23 @@ new Promise(
   )
 )
 ;
+const reject =
+  (test)=>(done)=>(err) => {
+    test(err);
+    done();
+  }
+;
+const resolve =
+  (test)=>(done)=>(x) => {
+    test(x)
+    done();
+  }
+;
+const shouldNotReject = 
+  resolve(x=>expect("Should not reject").toBe(false))
+;
 
 describe("anyPromise", function() {
-  const reject =
-    (test)=>(done)=>(err) => {
-      test(err);
-      done();
-    }
-  ;
-  const resolve =
-    (test)=>(done)=>(x) => {
-      test(x)
-      done();
-    }
-  ;
-  const shouldNotReject = 
-    resolve(x=>expect("Should not reject").toBe(false))
-  ;
-
   [
     {
       param:undefined
@@ -120,17 +119,168 @@ describe("anyPromise", function() {
         }
       )
   );
-
-
-
-  // it("Fail if empty array is passed", function(done) {
-  //   lib.anyPromise([])
-  //   .then(
-  //     x => 
-  //       expect("Resolve should not be called when empty array as parameter is provided").toBe(false)
-  //     ,err => expect(err).not.toBeNull()
-  //   )
-  //   done();
-  // });
-
 });
+
+describe("throtle",function() {
+  const doStart = (time)=>(sArr)=>(fArr)=>(x)=>{
+    sArr.push(x);
+    return later(x,time).then(doFinish(fArr));
+  }
+  ,doFinish = (fArr)=>(x)=>
+    fArr.push(x)
+  it(
+    "resolve at the right moment"
+    , done => {
+      const start =[]
+      ,finish =[]
+      ,max2=lib.throttle(2);
+      [1,2,3,4,5]
+      .map(
+        x=>max2(doStart(50)(start)(finish))(x)
+      );
+      later(false,25)
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,2")
+            expect(finish.join()).toBe("")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,2,3,4")
+            expect(finish.join()).toBe("1,2")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,2,3,4,5")
+            expect(finish.join()).toBe("1,2,3,4")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(finish.join()).toBe("1,2,3,4,5")
+          })
+          (done)
+      )
+    }
+  )
+  it(
+    "resolve at the right moment with rejects"
+    , done => {
+      const start =[]
+      ,finish =[]
+      ,max2=lib.throttle(2);
+      [1,2,3,4,5]
+      .map(
+        (x,index)=>(index%2===0)?max2(doStart(50)(start)(finish))(x):x=>rejectLater(false,50)
+      );
+      later(false,25)
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,3")
+            expect(finish.join()).toBe("")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,3,5")
+            expect(finish.join()).toBe("1,3")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(finish.join()).toBe("1,3,5")
+          })
+          (done)
+      );
+    }
+  )
+  it(
+    "resolve at the right moment earlier promises resolving later"
+    , done => {
+      const start =[]
+      ,finish =[]
+      ,max3=lib.throttle(3);
+      //use the toBe values as array of array and reduce it to one promise
+      // expect=x=>({toBe:x=>console.log(x)});
+      [1,2,3,4,5,6,7,8,9,10]
+      .map(
+        x=>max3(doStart((x===1)?150:50)(start)(finish))(x)
+      );
+      later(false,25)
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,2,3")
+            expect(finish.join()).toBe("")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,2,3,4,5")
+            expect(finish.join()).toBe("2,3")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,2,3,4,5,6,7")
+            expect(finish.join()).toBe("2,3,4,5")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,2,3,4,5,6,7,8,9,10")
+            expect(finish.join()).toBe("2,3,4,5,1,6,7")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(finish.join()).toBe("2,3,4,5,1,6,7,8,9,10")
+          })
+          (done)
+      );
+    }
+  )
+});
+
+describe("compose",function() {
+  //@todo: test compose with mix of promises and regular values
+  //@todo: test compose with mix of promises and regular values having a promise fail (make sure it skips calling other functions after failing)
+  it(
+    "TODO: create test"
+    , done => {
+      expect("TODO: implement this test").toBe("");
+      done();
+    }
+  );
+})
