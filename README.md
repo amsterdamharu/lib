@@ -43,7 +43,7 @@ Causes a promise returning function not to be called untill less than max are ac
 Let's say you'd like to get 100 xhr requests but only want 10 connections to be active, you could do the following:
 
 ```javascript
-max10 = throttle(10);
+max10 = lib.throttle(10);
 Promise.all(
   urls.map(
     //Only 10 connections will be active because fetch is wrapped in max10
@@ -58,7 +58,7 @@ Promise.all(
   responses => //...
 )
 
-const max10 = throttle(10);
+const max10 = lib.throttle(10);
 const functions = [fn1,fn2,fn3...fn100];//functions returning promise
 const params = [param1,param2,param3...param100];//parameter passed to function
 const promises = 
@@ -73,22 +73,23 @@ const promises =
 ### compose
 
 Turns an array of functions `[fn1,fn2,fn3]` into:
-`function(x) { return fn3(fn2(fn3(x))); }`
 
-Both x or any of the results of the functions can be a promise. If it is a promse then the next function will be called with the resolve value of the promise.
+`function(x) { return fn3(fn2(fn1(x))); }`
+
+Both x or any of the results of the functions can be a promise. If it is a promse then the next function will be used as the resolve handler.
 
 example:
 
 ```javascript
-compose([
+lib.compose([
   x=>x+1 //fn1
   ,x=>Promise.resolve(x+1) //fn2
   ,x=>x+2 //fn3
 ])
 //this turns into a function that looks like this:
-x =>
-  fn2(fn1(x))
-    .then(fn3)
+// x =>
+//   fn2(fn1(x))
+//     .then(fn3)
 ```
 
 If the promse is rejected the next function is not called the handler for reject is called later down the promise chain
@@ -97,7 +98,7 @@ exaple:
 
 ```javascript
 const composedFunction =
-  compose([
+  lib.compose([
     x=>x+1 //fn1
     ,x=>Promise.reject("nooo") //fn2
     ,x=>console.log("I'm never called") //fn3
