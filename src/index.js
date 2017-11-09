@@ -1,8 +1,3 @@
-//@todo: create tests that run in browser or node
-//  for node: https://jasmine.github.io/pages/getting_started.html
-//  for browser: https://github.com/iredelmeier/jasmine-webpack-plugin
-//@todo: for caching fetched data use https://github.com/garycourt/murmurhash-js/blob/master/murmurhash3_gc.js
-
 //not exported, checks if a value could be like promise
 const promiseLike =
 x =>
