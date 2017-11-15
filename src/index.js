@@ -15,25 +15,114 @@ const ifPromise =
 ;
 /**
  * Do not have node crash or browser console shout at you
- *   when rejecting a promise that will be not be handled 
+ *   when rejecting a promise that will not be handled 
  *   by current stack but later in the message queue
  * For example:
  * const someReject = x => Promise.reject(x);
  * //this will have node crash and browser log Uncought in Promise
  * //  the promise rejection is handled but not in the current stack
- * //  the handler is in the message que
+ * //  the handler is in the message queue
  * const result = someReject(x);
  * //put the reject handler in the message queue
  * setTimeout(x => result.then(undefined,x=>x),10);
  */
-const saveReject =
+const queReject =
   rejectValue => {
     const r = Promise.resolve(rejectValue);
     r.then(x=>x,x=>x);
     return r;
   }
 ;
-
+/**
+ * (result.Success|result.Failure)(value) 
+ *   Success or Failure: should the object returned 
+ * creates an object that has 3 members
+ *   succeeded: true if created with result.Success false if created with result.Failure
+ *   value: the value of the result
+ *   error: this is undefined when type is Success and has the error
+ *     or failure reason if the type is failure
+ *  Usage example:
+ *    //imagine a  synchronous function getUserById that returns a user or null
+ *    //  if the user is not found. Instead of using null you can have it return
+ *    //  a result that has a Success of User and Failure of "not found"
+ *    const getUserById = id =>
+ *      (id === 1) //imagine this is some sychronous action looking up the user from an array
+ *        ? result.success({userName:"the user name"})
+ *        : result.failure("User not found")
+ *    const res = getUserById(22);
+ *    if(res.succeeded !== true){
+ *      //handle failure res.error
+ *    } else {
+ *      //handle success res.value
+ *    }
+ *  For asynchronous code you can use compose that takes a promise (see compose)
+ */
+const result = (
+  ()=>{
+    const SUCCESS = {}
+    ,FAILURE = {}
+    ,createResult = type => value =>
+      (type !== SUCCESS)
+        ? ({
+            error:value,
+            succeeded:false
+          })
+        : ({
+            value:value
+            ,succeeded:true
+          })
+    return {
+      success:val=>createResult(SUCCESS)(val)
+      ,failure:err=>createResult(FAILURE)(err)
+    }
+  }
+)();
+/**
+ * 
+ * convert a function (T->T) to (result T->result T)
+ *  if a function takes a number and returns a number but could (for example)
+ *  throw an exception you can lift this funciton to a function that takes a
+ *  result of number and returns a result of number.
+ * Usage example:
+ * //function that takes a number and returns a number but throws if number passed is 1
+ * const example = num =>
+ *   (num === 1)?(throw "Cannot pass 1"):num+9
+ * const tryProcessor = fn => success => fail => val => {
+ *   try {
+ *     const res = fn(val);
+ *     success(res);
+ *   } catch (e) {
+ *     fail(e);
+ *   }
+ * }
+ * const tryResult = liftResult(tryProcessor)
+ * const r = tryResult(example)(result.success(1));
+ * if(r.succeded === true){ ... r.value ... } else { ... r.error ... }
+ * //example that takes an id and returns a user or undefined when user is not found
+ * const users = [{id:1,name:"Harry"}]
+ * const getUser = id => users.filter(user=>user.id===id)[0]
+ * const getUserProcessor = fn => success => fail => val =>{
+ *   const r = fn(val);
+ *   if(r === undefined){ success(r); } else { fail("User not found"); }
+ * }
+ * const userResultById = liftResult(getUserProcessor)(getUser);
+ * const userResult = userResultById(result.success(22));
+ * if(userResult.succeeded === true) { ... } else { ... }
+ */
+const liftResult = processor => fn => arg => {
+  //do not call funcion if argument is of type Failure
+  if(arg.succeeded !== true){
+    return arg;
+  }
+  const initial = {};
+  var returnVal = initial;
+  //can only call success or fail once in processor
+  const succ = a => (initial===returnVal)?returnVal = result.success(a):undefined
+  ,fail = err => (initial===returnVal)?returnVal = result.failure(a):undefined;
+  processor(fn)(succ)(fail)(arg);
+  //return a result
+  return returnVal;
+};
 /**
 * 
 * takes 2 functions and turns it into:
@@ -139,11 +228,11 @@ const throttle =
 const anyPromise = (promises) =>{
   let rec = (promises,rejected) => 
     (promises.length === 0)
-      ? saveReject(Promise.reject(rejected))
+      ? queReject(Promise.reject(rejected))
       : Promise.race(
           promises.map(
             ([p,orgIndex],index) =>
-              saveReject(
+              queReject(
                 new Promise(
                   (resolve,reject) =>
                     p.then(
@@ -184,7 +273,9 @@ export {
   compose
   ,throttle
   ,anyPromise
-  ,saveReject
+  ,queReject
+  ,result
+  ,liftResult
 };
 
 

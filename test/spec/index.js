@@ -10,7 +10,7 @@ const later = (resolveValue,time=500)=>
   )
 ;
 const rejectLater = (rejectValue,time=500)=>
-  lib.saveReject(
+  lib.queReject(
     new Promise(
       (resolve,reject)=>
         setTimeout(
