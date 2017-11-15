@@ -13,6 +13,26 @@ const ifPromise =
       ?x.then(fn)
       :fn(x)
 ;
+/**
+ * Do not have node crash or browser console shout at you
+ *   when rejecting a promise that will be not be handled 
+ *   by current stack but later in the message queue
+ * For example:
+ * const someReject = x => Promise.reject(x);
+ * //this will have node crash and browser log Uncought in Promise
+ * //  the promise rejection is handled but not in the current stack
+ * //  the handler is in the message que
+ * const result = someReject(x);
+ * //put the reject handler in the message queue
+ * setTimeout(x => result.then(undefined,x=>x),10);
+ */
+const saveReject =
+  rejectValue => {
+    const r = Promise.resolve(rejectValue);
+    r.then(x=>x,x=>x);
+    return r;
+  }
+;
 
 /**
 * 
@@ -117,18 +137,20 @@ const throttle =
  * @returns {Promise.<Any>}
  */
 const anyPromise = (promises) =>{
-  let rec = (promises,rejected) =>
+  let rec = (promises,rejected) => 
     (promises.length === 0)
-      ? Promise.reject(rejected)
+      ? saveReject(Promise.reject(rejected))
       : Promise.race(
           promises.map(
             ([p,orgIndex],index) =>
-              new Promise(
-                (resolve,reject) =>
-                  p.then(
-                    x => resolve(x)
-                    ,y => reject([y,orgIndex,index])
-                  )
+              saveReject(
+                new Promise(
+                  (resolve,reject) =>
+                    p.then(
+                      x => resolve(x)
+                      ,y => reject([y,orgIndex,index])
+                    )
+                )
               )
           )
         )
@@ -162,6 +184,7 @@ export {
   compose
   ,throttle
   ,anyPromise
+  ,saveReject
 };
 
 

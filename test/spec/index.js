@@ -1,22 +1,25 @@
 import * as lib from '../../src/index'
 
 const later = (resolveValue,time=500)=>
-new Promise(
-  (resolve,reject)=>
-    setTimeout(
-      x => resolve(resolveValue)
-      ,time
-    )
-)
+  new Promise(
+    (resolve,reject)=>
+      setTimeout(
+        x => resolve(resolveValue)
+        ,time
+      )
+  )
 ;
 const rejectLater = (rejectValue,time=500)=>
-new Promise(
-(resolve,reject)=>
-  setTimeout(
-    x => reject(rejectValue)
-    ,time
+  lib.saveReject(
+    new Promise(
+      (resolve,reject)=>
+        setTimeout(
+          x => 
+            reject(rejectValue)
+          ,time
+        )
+    )
   )
-)
 ;
 const reject =
   (test)=>(done)=>(err) => {
@@ -67,7 +70,7 @@ describe("anyPromise", function() {
       ,reject:shouldNotReject
     }
     ,{
-      param:[later(1,80),later(2,20),later(3,60)]
+      param:[later(1,9999),later(2,20),later(3,9999)]
       ,desc:"Resolve fastest promise"
       ,resolve:resolve(x=>expect(x).toBe(2))
       ,reject:shouldNotReject
