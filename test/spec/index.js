@@ -318,3 +318,166 @@ describe("compose",function() {
     }
   );
 })
+
+describe("result",function() {
+  [
+    [
+      "Should create a result with succeeded true"
+      ,lib.result.success(22).succeeded
+      ,true
+    ]
+    ,[
+      "Should create a result with value 22"
+      ,lib.result.success(22).value
+      ,22
+    ]
+    ,[
+      "Should create a result with error undefined"
+      ,lib.result.success(22).error
+      ,undefined
+    ]
+    ,[
+      "Should create a result with succeeded false"
+      ,lib.result.failure(22).succeeded
+      ,false
+    ]
+    ,[
+      "Should create a result with error 22"
+      ,lib.result.failure("the error").error
+      ,"the error"
+    ]
+    ,[
+      "Should create a result with value undefined"
+      ,lib.result.failure("the error").value
+      ,undefined
+    ]
+  ]
+  .map(
+    ([description,actual,expected]) => 
+      it(
+        description
+        , () => {
+          expect(
+            actual
+          ).toBe(expected);
+        }
+      )
+  );
+})
+
+describe("liftResult",function() {
+  (x => {
+    const users = [{id:1,name:"Harry"}]
+    const getUser = id => users.filter(user=>user.id===id)[0]
+    const getUserProcessor = fn => val => {
+      const r = fn(val);
+      if(r !== undefined){ 
+      return lib.result.success(r); 
+      } else {
+      return lib.result.failure("User not found"); 
+      }
+    }
+    const userResultById = lib.liftResult(getUserProcessor)(getUser);
+    return [
+      [
+        "Should return a result with value of user"
+        ,userResultById(lib.result.success(1)).value.name
+        ,"Harry"
+      ]
+      ,[
+        "Should return a result with succeeded true"
+        ,userResultById(lib.result.success(1)).succeeded
+        ,true
+      ]
+      ,[
+        "Should return a result with error undefined"
+        ,userResultById(lib.result.success(1)).error
+        ,undefined
+      ]
+      ,[
+        "Should return a result with value undefined"
+        ,userResultById(lib.result.success(4)).value
+        ,undefined
+      ]
+      ,[
+        "Should return a result with error 'User not found'"
+        ,userResultById(lib.result.success(4)).error
+        ,"User not found"
+      ]
+      ,[
+        "Should return a result with succeeded false"
+        ,userResultById(lib.result.success(4)).succeeded
+        ,false
+      ]
+    ];
+  })()
+  .map(
+    ([description,actual,expected]) => 
+      it(
+        description
+        , () => {
+          expect(
+            actual
+          ).toBe(expected);
+        }
+      )
+  );
+
+  (x => {
+    const example = num => {
+      if(num === 1){ throw "Cannot pass 1"; } else { return num+9; }
+    }
+    const tryProcessor = fn => val => {
+      try {
+        const res = fn(val);
+        return lib.result.success(res);
+      } catch (e) {
+        return lib.result.failure(e);
+      }
+    }
+    const tryResult = lib.liftResult(tryProcessor)
+        return [
+      [
+        "Should return a result with value of 12"
+        ,tryResult(example)(lib.result.success(11)).value
+        ,20
+      ]
+      ,[
+        "Should again return a result with succeeded true"
+        ,tryResult(example)(lib.result.success(11)).succeeded
+        ,true
+      ]
+      ,[
+        "Should again return a result with error undefined"
+        ,tryResult(example)(lib.result.success(11)).error
+        ,undefined
+      ]
+      ,[
+        "Should again return a result with value undefined"
+        ,tryResult(example)(lib.result.success(1)).value
+        ,undefined
+      ]
+      ,[
+        "Should again return a result with error 'Cannot pass 1'"
+        ,tryResult(example)(lib.result.success(1)).error
+        ,"Cannot pass 1"
+      ]
+      ,[
+        "Should again return a result with succeeded false"
+        ,tryResult(example)(lib.result.success(1)).succeeded
+        ,false
+      ]
+    ];
+  })()
+  .map(
+    ([description,actual,expected]) => 
+      it(
+        description
+        , () => {
+          expect(
+            actual
+          ).toBe(expected);
+        }
+      )
+  );
+})

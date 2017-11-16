@@ -85,28 +85,33 @@ const result = (
  *  result of number and returns a result of number.
  * Usage example:
  * //function that takes a number and returns a number but throws if number passed is 1
- * const example = num =>
- *   (num === 1)?(throw "Cannot pass 1"):num+9
- * const tryProcessor = fn => success => fail => val => {
+ * const example = num => {
+ *   console.log("num is:",num);
+ *   if(num === 1){ throw "Cannot pass 1"; } else { return num+9; }
+ * }
+ * const tryProcessor = fn => val => {
  *   try {
  *     const res = fn(val);
- *     success(res);
+ *     return result.success(res);
  *   } catch (e) {
- *     fail(e);
+ *     return result.failure(e);
  *   }
  * }
  * const tryResult = liftResult(tryProcessor)
- * const r = tryResult(example)(result.success(1));
- * if(r.succeded === true){ ... r.value ... } else { ... r.error ... }
+ * const r = tryResult(example)(result.success(3));
  * //example that takes an id and returns a user or undefined when user is not found
  * const users = [{id:1,name:"Harry"}]
  * const getUser = id => users.filter(user=>user.id===id)[0]
- * const getUserProcessor = fn => success => fail => val =>{
+ * const getUserProcessor = fn => val => {
  *   const r = fn(val);
- *   if(r === undefined){ success(r); } else { fail("User not found"); }
+ *   if(r !== undefined){ 
+ *    return result.success(r); 
+ *   } else {
+ *    return result.failure("User not found"); 
+ *   }
  * }
  * const userResultById = liftResult(getUserProcessor)(getUser);
- * const userResult = userResultById(result.success(22));
+ * const userResult = userResultById(result.success(1));
  * if(userResult.succeeded === true) { ... } else { ... }
  */
 const liftResult = processor => fn => arg => {
@@ -115,14 +120,9 @@ const liftResult = processor => fn => arg => {
     return arg;
   }
   const initial = {};
-  var returnVal = initial;
-  //can only call success or fail once in processor
-  const succ = a => (initial===returnVal)?returnVal = result.success(a):undefined
-  ,fail = err => (initial===returnVal)?returnVal = result.failure(a):undefined;
-  processor(fn)(succ)(fail)(arg);
-  //return a result
-  return returnVal;
+  return processor(fn)(arg.value);
 };
+
 /**
 * 
 * takes 2 functions and turns it into:
