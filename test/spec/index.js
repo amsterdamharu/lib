@@ -481,3 +481,55 @@ describe("liftResult",function() {
       )
   );
 })
+
+describe("timedPromise",function() {
+  [
+    {
+      param:[25,"error value, timed out",x=>later(x,50),"resolve value"]
+      ,desc:"Fail if timed out"
+      ,resolve:resolve(x=>expect("Resolve should not be called when timed out").toBe(false))
+      ,reject:reject(x=>expect(x).toBe("error value, timed out"))
+    }
+    ,{
+      param:[50,"error not used",x=>rejectLater(x,25),"reject with this"]
+      ,desc:"Fail when promise function fails"
+      ,resolve:resolve(x=>expect("Resolve should not be called when function rejects").toBe(false))
+      ,reject:reject(x=>expect(x).toBe("reject with this"))
+    }
+    ,{
+      param:[50,"error not used",x=>{throw("I'm throwing")},"not resolving"]
+      ,desc:"Fail when promise function throws exception"
+      ,resolve:resolve(x=>expect("Resolve should not be called when function throws").toBe(false))
+      ,reject:reject(x=>expect(x).toBe("I'm throwing"))
+    }
+    ,{
+      param:[5,"error not used",x=>x,"synchronous"]
+      ,desc:"Resolve synchronous promise function with value"
+      ,resolve:resolve(x=>expect(x).toBe("synchronous"))
+      ,reject:shouldNotReject
+    }
+    ,{
+      param:[50,"error not used",x=>later(x,25),"resolve value"]
+      ,desc:"Resolve promise function with value"
+      ,resolve:resolve(x=>expect(x).toBe("resolve value"))
+      ,reject:shouldNotReject
+    }
+  ]
+  .forEach(
+    config =>
+      it(
+        config.desc
+        , done => {
+          config.param.reduce(
+            (acc,param) => //lib.timedPromise(param[0])(param[1])...
+              acc(param)
+            ,lib.timedPromise
+          )
+          .then(
+            config.resolve(done)
+            ,config.reject(done)
+          );
+        }
+      )
+  );
+})

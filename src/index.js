@@ -14,6 +14,50 @@ const ifPromise =
       :fn(x)
 ;
 /**
+ * takes time, error, function (fn) and argument (arg)
+ * when fn(arg) returns a promise that does not resolve before
+ * time (time is in milliseconds) then this function will return
+ * a rejected promise with the reject reason of error (parameter error)
+ * example:
+ *    timedMyFunction = timedPromise
+ *      (500)//times out in 500 milliseconds
+ *      ("myFunction timed out.") //error if timed out
+ *      (myFunction) //the function to call 
+ *    // this will call myFunction("argument to myFunction")
+ *    //   and will return a promise (even if myFunciton does not return a promise)
+ *    //   if myFunction resolves within 500 millisends then the returned promise
+ *    //   resolves to that value, if myFunction rejects within 500 milliseconds
+ *    //   then the returned promise will reject with the reject reason of myFunction
+ *    //   if myFunction takes longer than 500 milliseconds to resolve or reject
+ *    //   then the returned promise will reject with the reject reason of 
+ *    //      "myFunction timed out."
+ *    timedMyFunction("argument to myFunction")
+ *    .then(
+ *      resolve => //continue, resolve is the return value of myFuntion
+ *      ,reject => //handle reject, either myFunction failed or timed out
+ *    )
+ */
+const timedPromise =
+  (time) =>
+  (error)  =>
+  (fn) =>
+  (arg)  => 
+    queReject(
+      Promise.race([
+        queReject(Promise.resolve(arg).then(fn))
+        ,queReject(
+          new Promise(
+            (resolve,reject) =>
+              setTimeout(
+                x=>reject(error)
+                ,time
+              )
+          )
+        )
+      ])
+    )
+;
+/**
  * Do not have node crash or browser console shout at you
  *   when rejecting a promise that will not be handled 
  *   by current stack but later in the message queue
@@ -276,6 +320,7 @@ export {
   ,queReject
   ,result
   ,liftResult
+  ,timedPromise
 };
 
 
