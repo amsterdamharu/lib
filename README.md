@@ -1,6 +1,14 @@
 # lib
 JavaScript library functions
 
+### npm Scripts
+
+    npm run test
+
+Runs webpack dev server with `jasmine-webpack-plugin`, look at the output of the command for the url to open (should be: http://localhost:8080/_specRunner.html)
+
+The scripts `start`,`build` and `debug` are not used.
+
 ### anyPromise
 Resolves whatever promises resolves first and rejects if all promises reject with an array of rejected values in the same order as passed promises or rejects. Will also reject when an empty array or none array is passed.
 

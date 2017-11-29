@@ -3,7 +3,7 @@
   "scripts": {
     "build": "webpack -p",
     "start": "webpack-dev-server ./src/index.js --hot --inline --content-base ./static",
-    "debug": "node --inspect --debug-brk ./node_modules/webpack-dev-server/bin/webpack-dev-server.js ./src/index.js --hot --inline --content-base ./static",
+    "debug": "node --inspect-brk ./node_modules/webpack-dev-server/bin/webpack-dev-server.js ./src/index.js --hot --inline --content-base ./static",
     "test": "webpack-dev-server --config ./test/webpack.test.config.js"
   },
   "dependencies": {
