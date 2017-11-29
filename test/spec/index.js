@@ -130,13 +130,16 @@ describe("throtle",function() {
     return later(x,time).then(doFinish(fArr));
   }
   ,doFinish = (fArr)=>(x)=>
-    fArr.push(x)
+    fArr.push(x);
+  //when a throttled set completes (last promise resolves)
+  //  the throttle function is reset (que=[],queIndex=-1,running=0)
+  //  so it is possible to reuse a throttle function after it completes
+  const max2=lib.throttle(2);
   it(
     "resolve at the right moment"
     , done => {
       const start =[]
-      ,finish =[]
-      ,max2=lib.throttle(2);
+      ,finish =[];
       [1,2,3,4,5]
       .map(
         x=>max2(doStart(50)(start)(finish))(x)
@@ -182,8 +185,7 @@ describe("throtle",function() {
     "resolve at the right moment with rejects"
     , done => {
       const start =[]
-      ,finish =[]
-      ,max2=lib.throttle(2);
+      ,finish =[];
       [1,2,3,4,5]
       .map(
         (x,index)=>(index%2===0)?max2(doStart(50)(start)(finish))(x):x=>rejectLater(false,50)

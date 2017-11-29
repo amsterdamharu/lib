@@ -231,17 +231,20 @@ Promise.all(//even though a 100 promises are created, only 2 are active
 const throttle =
   (max) =>{
     var que = [];
+    var queIndex =-1;
     var running = 0;
-    const wait = function*(resolve,fn,arg){
-      return resolve(ifPromise(fn)(arg));
-    };
+    const wait = (resolve,fn,arg) => () =>
+      resolve(ifPromise(fn)(arg));
     const nextInQue = ()=>{
-      const it = que[0];
-      que=que.slice(1);
-      if(it){
-        it.next();
+      ++queIndex;
+      if(typeof que[queIndex]==="function"){
+        return que[queIndex]();
+      }else{
+        que=[];
+        queIndex=-1;
+        running = 0;
+        return "Does not matter, not used";
       }
-      return true;
     };
     const queItem = (fn,arg)=>
       new Promise(
