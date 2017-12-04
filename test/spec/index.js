@@ -1,14 +1,6 @@
 import * as lib from '../../src/index'
 
-const later = (resolveValue,time=500)=>
-  new Promise(
-    (resolve,reject)=>
-      setTimeout(
-        x => resolve(resolveValue)
-        ,time
-      )
-  )
-;
+const later = lib.later;
 const rejectLater = (rejectValue,time=500)=>
   lib.queReject(
     new Promise(
@@ -535,3 +527,31 @@ describe("timedPromise",function() {
       )
   );
 })
+
+//@todo: test lib
+//same as throttle, check a mutating object over a period of time
+//only one test with a fail should do
+const twoPer50 = lib.throttlePeriod(2,50);
+const urls = [1,2,3,4];
+const Fail = function(detail){this.detail=detail;};
+var i = 0;
+Promise.all(
+  urls.map(
+    (url)=>
+      twoPer50
+        (
+          x=>{
+            console.log("starting:",x);
+            if(x===3){
+              return Promise.reject("nope, sorry")
+              return "not a promise duede"
+            }
+            return Promise.resolve(x);
+          }
+        )(url)
+        .then(x=>x,err=>new Fail([err,url]))
+  )
+).then(
+  x=>console.log("done:",x)
+  ,y=>console.warn("failed:",y)
+);

@@ -3,7 +3,16 @@ const promiseLike =
 x =>
   (x!==undefined && typeof x.then === "function")
 ;
-
+//not exported, used to resolve a value later
+const later = (resolveValue,time=500)=>
+  new Promise(
+    (resolve,reject)=>
+      setTimeout(
+        x => resolve(resolveValue)
+        ,time
+      )
+  )
+;
 //not exported, if x is promise then fn is called with the
 //  resolve of x
 const ifPromise =
@@ -212,7 +221,7 @@ const compose =
       ,x=>x//id function
     )
 ;
-
+//@todo: add lastOf where only the last REQUESTED of the promise with id will be resolved
 /*
 causes a promise returning function not to be called
 untill less than max are active
@@ -261,6 +270,72 @@ const throttle =
       }
       return p;
     };    
+  }
+;
+
+/*
+causes a promise returning function not to be called
+if more than max within period were already called
+period is time in milliseconds so 1000 is one second
+when period is 1000 and max is 2 then only 2 functions will
+be called every second
+usage example:
+twoPerSecond = throttlePeriod(2,1000);
+urls = ["http://url1","http://url2",..."http://url100"];
+Promise.all(//even though a 100 promises are created only 2 per second will have throttle started
+  urls.map(
+    (url)=>
+      twoPerSecond(fetch)(url)
+      .then(...)
+  )
+)
+*/
+const throttlePeriod =
+  (max,period) =>{
+    var total = 0,
+    started = undefined,
+    periods = [];
+    const reset = () => {
+      total = 0;
+      started = undefined;
+      periods = [];
+    }
+    return (fn)=>(arg)=>{
+      started = (started === undefined)
+        ? new Date().getTime()
+        : started
+      ++total;
+      const now = new Date().getTime(),
+      currentPeriod = Math.floor((now-started)/period);
+      var next = 0;
+      while((periods[currentPeriod+next] || 0)===max){
+        ++next;
+      }
+      periods[currentPeriod+next] = 
+        (periods[currentPeriod+next] === undefined)
+        ? 1
+        : periods[currentPeriod+next]+1
+    return later(
+        arg,
+        (next*period)+1
+      ).then(
+        fn
+      )
+      .then(
+        x=>{
+          if(--total === 0){
+            reset();
+          }
+          return x;
+        }
+        ,err=>{
+          if(--total === 0){
+            reset()
+          }
+          return new Promise((_,reject)=>reject(err));
+        }
+      )
+    };
   }
 ;
 /**
@@ -324,6 +399,8 @@ export {
   ,result
   ,liftResult
   ,timedPromise
+  ,later
+  ,throttlePeriod
 };
 
 
