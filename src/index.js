@@ -243,7 +243,7 @@ const throttle =
     var queIndex =-1;
     var running = 0;
     const wait = (resolve,fn,arg) => () =>
-      resolve(ifPromise(fn)(arg));
+      resolve(ifPromise(fn)(arg))||true;//should always return true
     const nextInQue = ()=>{
       ++queIndex;
       if(typeof que[queIndex]==="function"){
@@ -338,6 +338,58 @@ const throttlePeriod =
     };
   }
 ;
+
+
+/*
+causes a promise returning function not to be called
+if more than max within period were already called
+and there are no more than max unrsolved promises
+period is time in milliseconds so 1000 is one second
+when period is 1000 and maxPeriod is 2 and maxActive is 2
+then only maximum 2 functions will be called every second
+and less if some take longer than 2 seconds to finish
+usage example:
+const twoPerSecondMax3Active = throttlePeriodAndActive(3,2,1000),
+urls = ["http://url1","http://url2",..."http://url100"];
+//even though a 100 promises are created only 2 per second will have throttle started
+//  and less if request takes longer than 2 seconds
+Promise.all(
+  urls.map(
+    (url)=>
+      twoPerSecondMax3Active(fetch)(url)
+      .then(...)
+  )
+)
+*/
+const throttlePeriodAndActive =
+(maxActive,maxPeriod,period) =>{
+  const maxA = throttle(maxActive),
+  maxP = throttlePeriod(maxPeriod,period);
+  return (fn)=>(arg)=>
+    // maxP(x=>x)(arg)
+    // .then(maxA(fn))
+    maxA(fn)(arg)
+};
+window.later = later;
+const twoPerSecondMax3Active = throttlePeriodAndActive(2,3,5000),
+urls = [1,2,3];
+Promise.all(
+  urls.map(
+    url =>
+      twoPerSecondMax3Active(
+        x=>{
+          console.log("called with:",x);
+          return later(x,500)
+          .then(x=>console.log("resolved with:",x)||x)
+        }
+      )(url)
+      .then(
+        x=>console.log("throttle resolved:",x)||x
+      )
+  )
+)
+
+
 /**
  * Resolves whatever promises resolves first and rejects if all promises reject
  * with an array of rejected values in the same order as passed promises
