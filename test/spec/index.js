@@ -528,9 +528,102 @@ describe("timedPromise",function() {
   );
 })
 
-//@todo: test lib
-//same as throttle, check a mutating object over a period of time
-//only one test with a fail should do
+describe("throttlePeriod",function() {
+  const doStart = (time)=>(sArr)=>(fArr)=>(x)=>{
+    sArr.push(x);
+    return later(x,time).then(doFinish(fArr));
+  }
+  ,doFinish = (fArr)=>(x)=>
+    fArr.push(x);
+  //when a throttled set completes (last promise resolves)
+  //  the throttle function is reset
+  //  so it is possible to reuse a throttle function after it completes
+  const twoPer50=lib.throttlePeriod(2,50);
+  it(
+    "resolve period throttle at the right moment"
+    , done => {
+      const start =[]
+      ,finish =[];
+      [1,2,3,4,5]
+      .map(
+        x=>twoPer50(doStart(50)(start)(finish))(x)
+      );
+      later(false,25)
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,2")
+            expect(finish.join()).toBe("")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,2,3,4")
+            expect(finish.join()).toBe("1,2")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,2,3,4,5")
+            expect(finish.join()).toBe("1,2,3,4")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(finish.join()).toBe("1,2,3,4,5")
+          })
+          (done)
+      )
+    }
+  )
+  it(
+    "resolve period at the right moment with rejects"
+    , done => {
+      const start =[]
+      ,finish =[];
+      [1,2,3,4,5]
+      .map(
+        (x,index)=>(index!==4)?twoPer50(doStart(50)(start)(finish))(x):x=>rejectLater(false,50)
+      );
+      later(false,25)
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,2")
+            expect(finish.join()).toBe("")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(start.join()).toBe("1,2,3,4")
+            expect(finish.join()).toBe("1,2")
+          })
+          (x=>x)
+      )
+      .then(x=>later(false,50))
+      .then(
+        resolve(
+          x=>{
+            expect(finish.join()).toBe("1,2,3,4")
+          })
+          (done)
+      );
+    }
+  )
+});
+
 const twoPer50 = lib.throttlePeriod(2,50);
 const urls = [1,2,3,4];
 const Fail = function(detail){this.detail=detail;};
