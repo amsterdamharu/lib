@@ -315,7 +315,7 @@ const throttlePeriod =
         (periods[currentPeriod+next] === undefined)
         ? 1
         : periods[currentPeriod+next]+1
-    return later(
+      return later(
         arg,
         (next*period)+1
       ).then(
@@ -332,9 +332,9 @@ const throttlePeriod =
           if(--total === 0){
             reset()
           }
-          return new Promise((_,reject)=>reject(err));
+          return Promise.reject(err);
         }
-      )
+      );
     };
   }
 ;
