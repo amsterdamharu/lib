@@ -207,12 +207,6 @@ both x or any of the results of the functions can be a promise
 If it is a promse then the next function will be called with
 the resolve value of the promise.
 If the promse is rejected the next function is not called
-the handler for reject is called later down the promise chain
-for example fn2 returns a rejected promise:
-fn1(x)
-.then(x => fn2(x))
-.then(notCalled => fn3(notcalled))
-.then(undefined,called)
 */
 const compose =
   fns =>
