@@ -436,7 +436,20 @@ const anyPromise = (promises) =>{
     ,promises.map(x=>"wuh?")
   );
 };
-
+/**
+ * Creates an array from start to end where start is a number smaller than end
+ * It takes an optional parameter called step that defaults to 1
+ * usage example:
+ * range(5,9);// [5, 6, 7, 8, 9]
+ * range(5,9,1.5);// [5, 6.5, 8]
+ */
+const range = (start,end,step=1)=>{
+  const min = start-step,max=end
+  return Array.from(
+    new Array(Math.floor((max-min)/step)),
+    (val,index)=>min+(step*(index+1))
+  );
+};
 export { 
   compose
   ,throttle
@@ -447,6 +460,7 @@ export {
   ,timedPromise
   ,later
   ,throttlePeriod
+  ,range
 };
 
 
