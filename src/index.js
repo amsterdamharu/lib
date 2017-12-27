@@ -364,26 +364,6 @@ const throttlePeriodAndActive =
     // .then(maxA(fn))
     maxA(fn)(arg)
 };
-window.later = later;
-const twoPerSecondMax3Active = throttlePeriodAndActive(2,3,5000),
-urls = [1,2,3];
-Promise.all(
-  urls.map(
-    url =>
-      twoPerSecondMax3Active(
-        x=>{
-          console.log("called with:",x);
-          return later(x,500)
-          .then(x=>console.log("resolved with:",x)||x)
-        }
-      )(url)
-      .then(
-        x=>console.log("throttle resolved:",x)||x
-      )
-  )
-)
-
-
 /**
  * Resolves whatever promises resolves first and rejects if all promises reject
  * with an array of rejected values in the same order as passed promises
@@ -450,6 +430,55 @@ const range = (start,end,step=1)=>{
     (val,index)=>min+(step*(index+1))
   );
 };
+/**
+ * Takes an id and a promise and resolves the promise only if it was the last one
+ * This is when a user can filter a list of items but the filter is asynchronous
+ * user can click on multiple UI elements causing multiple promises to be created
+ * but only last requested promise needs to be resolved because older ones were replaced
+ * with newer ones.
+ * usage example:
+ * Let's say you have a chart and user can change grouping by month or country, user can
+ * click month and while request for data is resolving the user clicks on country. No
+ * matter when the 2 ongoing promises resolve you only want the latest one (group by country)
+ * to resolve
+ * const lastChartChange = onlyLastRequestedPromise("chart");
+ * Array.from(document.querySelectorAll("#chartButtons [data-group]"))
+ * .map(
+ *   x=>x.addEventListener(
+ *     "click"
+ *     ,e=>
+ *       //user can click group buttons as much and as fast as they want
+ *       //  only the last called changeGroup will resolve.
+ *       lastChartChange(
+ *         changeGroup(e.target.getAttribute("data-group"))
+ *       )
+ *       .then(
+ *         result=>updateChart(result)
+ *       )
+ *   )
+ * );
+ */
+const onlyLastRequestedPromise = ((promiseIds) => {
+  const whenResolve = (promise, id, promiseID, resolveValue) => {
+    if(promise!==undefined){//called by user adding a promise
+      promiseIds[id]={};
+    } else {//called because promise is resolved
+      return (promiseID === promiseIds[id])
+        ? console.log("promise id is same as last one so it is ok to resolve:", resolveValue) ||
+          Promise.resolve(resolveValue)
+        : console.log("promise id is not same as last one so reject:", resolveValue) ||
+          Promise.reject("A newer request was made.")
+    }
+    return (function (currentPromiseID) {
+      return promise
+        .then(function (result) {
+          return whenResolve(undefined,id, currentPromiseID, result);
+        });
+    }(promiseIds[id]));
+  };
+  return (id = "general") => promise =>
+    whenResolve(promise, id);
+})({});
 export { 
   compose
   ,throttle
@@ -461,6 +490,7 @@ export {
   ,later
   ,throttlePeriod
   ,range
+  ,onlyLastRequestedPromise
 };
 
 

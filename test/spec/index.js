@@ -624,27 +624,76 @@ describe("throttlePeriod",function() {
   )
 });
 
-const twoPer50 = lib.throttlePeriod(2,50);
-const urls = [1,2,3,4];
-const Fail = function(detail){this.detail=detail;};
-var i = 0;
-Promise.all(
-  urls.map(
-    (url)=>
-      twoPer50
-        (
-          x=>{
-            console.log("starting:",x);
-            if(x===3){
-              return Promise.reject("nope, sorry")
-              return "not a promise duede"
-            }
-            return Promise.resolve(x);
-          }
-        )(url)
-        .then(x=>x,err=>new Fail([err,url]))
-  )
-).then(
-  x=>console.log("done:",x)
-  ,y=>console.warn("failed:",y)
-);
+describe("onlyLastRequestedPromise",function() {
+  it(
+    "Pass the last requested promise"
+    , (done) => {
+      const last = lib.onlyLastRequestedPromise("fromTest");
+      last(later(22,100))
+      .then(
+        result=>{
+          expect(
+            false
+          ).toBe("This should not resolve.");
+          done();
+        }
+        ,err=>done()
+      );
+      last(later(88888888,50))
+      .then(
+        result=>{
+          expect(
+            result
+          ).toBe(88888888);
+        }
+      )
+    }
+  );
+  it(
+    "Fail promise that is older."
+    , (done) => {
+      const last = lib.onlyLastRequestedPromise("fromTest");
+      last(later(22,100))
+      .catch(
+        result=>{
+          expect(
+            result
+          ).toBe("A newer request was made.");
+          done();    
+        }
+      );
+      last(later(88888888,50))
+      .catch(
+        result=>{
+          expect(
+            false
+          ).toBe("Should not fail.");
+        }
+      )
+    }
+  );
+  it(
+    "Pass promise with different ids."
+    , (done) => {
+      const last = lib.onlyLastRequestedPromise("fromTest");
+      const otherLast = lib.onlyLastRequestedPromise("otherTest");
+      otherLast(later(88888888,75))
+      .then(
+        result=>{
+          expect(
+            result
+          ).toBe(88888888);
+          done();
+        }
+      )
+      last(later(88888888,50))
+      .then(
+        result=>{
+          expect(
+            result
+          ).toBe(88888888);
+        }
+      )
+    }
+  );
+})
