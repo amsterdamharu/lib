@@ -697,3 +697,16 @@ describe("onlyLastRequestedPromise",function() {
     }
   );
 })
+
+
+describe("scale",function() {
+  const percent = lib.scale(0)(1);
+  it(
+    "Should return 150"
+    , () => {
+      expect(
+        percent(100)(200)(0.5)
+      ).toBe(150);
+    }
+  );
+})

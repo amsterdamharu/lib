@@ -479,6 +479,17 @@ const onlyLastRequestedPromise = ((promiseIds) => {
   return (id = "general") => promise =>
     whenResolve(promise, id);
 })({});
+/*
+ * This is like d3 scale, if we have a range from 5 to 10 and the domain is 0 to 1
+ * then a number of 0.2 will output 6
+ * let's day I want to move from 100px to 200px in 2 seconds the time in seconds
+ * is expressed in a number from 0 to 1 then I can use this the following way
+ * const moveScale = scale(0)(1)(100)(200);
+ * after one second (half of the period) the number representing time passed is 0.5
+ * moveScale(0.5);//results in 150 (150px)
+*/
+const scale = domainMin => domainMax => scaleMin => scaleMax => num =>
+  ((num/(domainMax-domainMin))*(scaleMax-scaleMin))+scaleMin;
 export { 
   compose
   ,throttle
@@ -491,6 +502,7 @@ export {
   ,throttlePeriod
   ,range
   ,onlyLastRequestedPromise
+  ,scale
 };
 
 
