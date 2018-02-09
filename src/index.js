@@ -490,6 +490,52 @@ const onlyLastRequestedPromise = ((promiseIds) => {
 */
 const scale = domainMin => domainMax => scaleMin => scaleMax => num =>
   ((num/(domainMax-domainMin))*(scaleMax-scaleMin))+scaleMin;
+const REPLACE = {};
+const SAVE = {}
+const createThread = (saved=[]) => (fn,action) => arg =>{
+  const processResult = result =>{
+    const addAndReturn = result => {
+      (action===SAVE)?saved = saved.concat([result]):false;
+      (action===REPLACE)?saved = [result]:false;
+      return result;  
+    };
+    return (promiseLike(result))
+      ? result.then(addAndReturn)
+      : addAndReturn(result)
+  }
+  return (promiseLike(arg))
+    ? arg.then(
+        result=>
+          fn(saved.concat([result]))
+      )
+      .then(processResult)
+    : processResult(fn(saved.concat([arg])))
+};
+const threadResultsOnly = thread => (fn, action) => threadedResults =>
+  thread(//not interested in threaded values, only results of previous one
+    (threadedResults)=>
+      fn(threadedResults.slice(-1)[0]),
+      action
+  )(threadedResults);
+const formatObject = doForKey => doWithKey => object => {
+  const recur = object =>
+    Object.assign(
+      {},
+      object,
+      Object.keys(object).reduce(
+        (o,key)=>{
+          (object[key]&&(typeof object[key] === "object"))
+            ? o[key] = recur(object[key])
+            : (doForKey(key))
+                ? o[key] = doWithKey(object,key)
+                : o[key] = object[key];
+          return o;
+        },
+        {}
+      )
+    );
+  return recur(object);
+};
 export { 
   compose
   ,throttle
@@ -503,6 +549,11 @@ export {
   ,range
   ,onlyLastRequestedPromise
   ,scale
+  ,createThread
+  ,threadResultsOnly
+  ,REPLACE
+  ,SAVE
+  ,formatObject
 };
 
 

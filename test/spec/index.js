@@ -44,7 +44,7 @@ describe("anyPromise", function() {
       ,reject:reject(x=>expect(x).not.toBeNull())
       }
     ,{
-      param:[later(1,10),2,3,4,5,6]
+      param:[later(1,50),2,3,4,5,6]
       ,desc:"Resolve to first non promise value"
       ,resolve:resolve(x=>expect(x).toBe(2))
       ,reject:shouldNotReject
@@ -710,3 +710,57 @@ describe("scale",function() {
     }
   );
 })
+
+
+
+
+/**
+ * //@todo: test following added functions
+  ,createThread
+  ,threadResultsOnly
+  ,REPLACE
+  ,SAVE
+  ,formatObject
+
+const testJSON = JSON.stringify({
+  startDate:new Date(),
+  other:"some other value",
+  range:{
+    min:new Date(Date.now()-100000),
+    max:new Date(Date.now()+100000),
+    other:22
+  }
+});
+
+//library of application specific implementation (type a to b)
+const urlToResponse = url => //a -> b
+  Promise.resolve({
+    status:200,
+    json:()=>JSON.parse(testJSON)
+  });
+const responseToObject = response => response.json();//b -> c
+const objectWithDates = object =>//c -> d
+  formatObject
+    (x=>x.toLowerCase().indexOf("date")!==-1||x==="min"||x==="max")
+    ((o,key)=>new Date(o[key]))
+    (object);
+const objectAndResponseToObjectAndStatusObject = ([response,object]) =>//d -> e
+  ({
+    body:object,
+    status:response.status
+  });
+
+//actual work flow
+const getData = (url) => {
+  const thread = createThread();
+  return Promise.resolve(url)
+  .then( thread(urlToResponse,SAVE) )//save the response
+  .then( responseToObject )//does not use threaded value
+  .then( objectWithDates )//does no use threaded value
+  .then( thread(objectAndResponseToObjectAndStatusObject) )//uses threaded value
+};
+getData("some url")
+.then(
+  results=>console.log(results)
+);
+**/
