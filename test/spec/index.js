@@ -44,7 +44,7 @@ describe("anyPromise", function() {
       ,reject:reject(x=>expect(x).not.toBeNull())
       }
     ,{
-      param:[later(1,50),2,3,4,5,6]
+      param:[_=>later(1,10),2,3,4,5,6]
       ,desc:"Resolve to first non promise value"
       ,resolve:resolve(x=>expect(x).toBe(2))
       ,reject:shouldNotReject
@@ -106,7 +106,15 @@ describe("anyPromise", function() {
       it(
         config.desc
         , done => {
-          lib.anyPromise(config.param)
+          lib.anyPromise(
+            config.param && config.param.map(
+              x=>
+                (typeof x === "function")
+                  ? x()
+                  : x
+            )
+
+          )
           .then(
             config.resolve(done)
             ,config.reject(done)
@@ -714,14 +722,7 @@ describe("scale",function() {
 
 
 
-/**
- * //@todo: test following added functions
-  ,createThread
-  ,threadResultsOnly
-  ,REPLACE
-  ,SAVE
-  ,formatObject
-
+ //@todo: test following added functions
 const testJSON = JSON.stringify({
   startDate:new Date(),
   other:"some other value",
@@ -740,9 +741,9 @@ const urlToResponse = url => //a -> b
   });
 const responseToObject = response => response.json();//b -> c
 const objectWithDates = object =>//c -> d
-  formatObject
+  lib.formatObject
     (x=>x.toLowerCase().indexOf("date")!==-1||x==="min"||x==="max")
-    ((o,key)=>new Date(o[key]))
+    ((o,key)=>"Hello World")//new Date(o[key]))
     (object);
 const objectAndResponseToObjectAndStatusObject = ([response,object]) =>//d -> e
   ({
@@ -752,9 +753,9 @@ const objectAndResponseToObjectAndStatusObject = ([response,object]) =>//d -> e
 
 //actual work flow
 const getData = (url) => {
-  const thread = createThread();
+  const thread = lib.createThread();
   return Promise.resolve(url)
-  .then( thread(urlToResponse,SAVE) )//save the response
+  .then( thread(urlToResponse,lib.SAVE) )//save the response
   .then( responseToObject )//does not use threaded value
   .then( objectWithDates )//does no use threaded value
   .then( thread(objectAndResponseToObjectAndStatusObject) )//uses threaded value
@@ -763,4 +764,3 @@ getData("some url")
 .then(
   results=>console.log(results)
 );
-**/

@@ -464,10 +464,8 @@ const onlyLastRequestedPromise = ((promiseIds) => {
       promiseIds[id]={};
     } else {//called because promise is resolved
       return (promiseID === promiseIds[id])
-        ? console.log("promise id is same as last one so it is ok to resolve:", resolveValue) ||
-          Promise.resolve(resolveValue)
-        : console.log("promise id is not same as last one so reject:", resolveValue) ||
-          Promise.reject("A newer request was made.")
+        ? Promise.resolve(resolveValue)
+        : Promise.reject("A newer request was made.")
     }
     return (function (currentPromiseID) {
       return promise
