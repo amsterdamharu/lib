@@ -1,3 +1,4 @@
+//@ts-check
 //not exported, checks if a value could be like promise
 const promiseLike =
 x =>
@@ -33,8 +34,8 @@ const ifPromise =
  *      ("myFunction timed out.") //error if timed out
  *      (myFunction) //the function to call 
  *    // this will call myFunction("argument to myFunction")
- *    //   and will return a promise (even if myFunciton does not return a promise)
- *    //   if myFunction resolves within 500 millisends then the returned promise
+ *    //   and will return a promise (even if myFunction does not return a promise)
+ *    //   if myFunction resolves within 500 milliseconds then the returned promise
  *    //   resolves to that value, if myFunction rejects within 500 milliseconds
  *    //   then the returned promise will reject with the reject reason of myFunction
  *    //   if myFunction takes longer than 500 milliseconds to resolve or reject
@@ -72,7 +73,7 @@ const timedPromise =
  *   by current stack but later in the message queue
  * For example:
  * const someReject = x => Promise.reject(x);
- * //this will have node crash and browser log Uncought in Promise
+ * //this will have node crash and browser log Uncaught in Promise
  * //  the promise rejection is handled but not in the current stack
  * //  the handler is in the message queue
  * const result = someReject(x);
@@ -99,7 +100,7 @@ const queReject =
  *    //  if the user is not found. Instead of using null you can have it return
  *    //  a result that has a Success of User and Failure of "not found"
  *    const getUserById = id =>
- *      (id === 1) //imagine this is some sychronous action looking up the user from an array
+ *      (id === 1) //imagine this is some synchronous action looking up the user from an array
  *        ? result.success({userName:"the user name"})
  *        : result.failure("User not found")
  *    const res = getUserById(22);
@@ -134,7 +135,7 @@ const result = (
  * 
  * convert a function (T->T) to (result T->result T)
  *  if a function takes a number and returns a number but could (for example)
- *  throw an exception you can lift this funciton to a function that takes a
+ *  throw an exception you can lift this function to a function that takes a
  *  result of number and returns a result of number.
  * Usage example:
  * //function that takes a number and returns a number but throws if number passed is 1
@@ -168,7 +169,7 @@ const result = (
  * if(userResult.succeeded === true) { ... } else { ... }
  */
 const liftResult = processor => fn => arg => {
-  //do not call funcion if argument is of type Failure
+  //do not call function if argument is of type Failure
   if(arg.succeeded !== true){
     return arg;
   }
@@ -180,7 +181,7 @@ const liftResult = processor => fn => arg => {
 * 
 * takes 2 functions and turns it into:
 * fn2(fn1(x)) when a value x is provided
-* if x is a promse it will turn it into:
+* if x is a promise it will turn it into:
 * x.then(x => fn2(fn1(x)))
 * if fn1(x) is a promise it will turn it into:
 * fn1(x).then(x => fn2(x))
@@ -204,9 +205,9 @@ const compose2 =
 turns an array of functions [fn1,fn2,fn3] into:
 fn3(fn2(fn3(x)))
 both x or any of the results of the functions can be a promise
-If it is a promse then the next function will be called with
+If it is a promise then the next function will be called with
 the resolve value of the promise.
-If the promse is rejected the next function is not called
+If the promise is rejected the next function is not called
 */
 const compose =
   fns =>
@@ -215,10 +216,9 @@ const compose =
       ,x=>x//id function
     )
 ;
-//@todo: add lastOf where only the last REQUESTED of the promise with id will be resolved
 /*
 causes a promise returning function not to be called
-untill less than max are active
+until less than max are active
 usage example:
 max2 = throttle(2);
 functions = [fn1,fn2,fn3...fn100];//functions returning promise
@@ -337,7 +337,7 @@ const throttlePeriod =
 /*
 causes a promise returning function not to be called
 if more than max within period were already called
-and there are no more than max unrsolved promises
+and there are no more than max unresolved promises
 period is time in milliseconds so 1000 is one second
 when period is 1000 and maxPeriod is 2 and maxActive is 2
 then only maximum 2 functions will be called every second
@@ -370,8 +370,6 @@ const throttlePeriodAndActive =
  * or rejects when an empty array is passed
  * Not all values in the array need to be promises but anyPromise will resolve
  * with the first value that is not a promise if there are any.
- * @param {Any[]} promises 
- * @returns {Promise.<Any>}
  */
 const anyPromise = (promises) =>{
   let rec = (promises,rejected) => 
