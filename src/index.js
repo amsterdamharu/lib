@@ -422,9 +422,8 @@ const anyPromise = (promises) =>{
  * range(5,9,1.5);// [5, 6.5, 8]
  */
 const range = (start,end,step=1)=>{
-  const min = start-step,max=end
-  return Array.from(
-    new Array(Math.floor((max-min)/step)),
+  const min = start-step
+  return [...new Array(Math.floor((end-min)/step))].map(
     (val,index)=>min+(step*(index+1))
   );
 };
@@ -532,6 +531,30 @@ const formatObject = doForKey => doWithKey => object => {
     );
   return recur(object);
 };
+//used to handle large array of data in batches, can combine with throttle
+// https://stackoverflow.com/a/50650962/1641941
+//@todo: test with later
+const Fail = function(reason){this.reason=reason;};
+const isFail = o=>(o&&o.constructor)===Fail;
+const isNotFail = o=>!isFail(o);
+const batchProcess = 
+  handleBatchResult =>
+  batchSize =>
+  processor =>
+  result =>
+  items =>
+    Promise.all(
+      items.slice(0,batchSize)
+      .map(processor)
+    )
+    .then(handleBatchResult)
+    .then(//recursively call itself with next batch
+      batchResult=>
+        batchProcess(handleBatchResult)(batchSize)(processor)
+          (result.concat(batchResult))(items.slice(batchSize))
+    )
+;
+
 export { 
   compose
   ,throttle
@@ -550,62 +573,8 @@ export {
   ,REPLACE
   ,SAVE
   ,formatObject
+  ,Fail
+  ,isFail
+  ,isNotFail
+  ,batchProcess
 };
-
-
-
-/**
- * playing with service worker, maybe send more message types
- * a type to change fetch strategy (cache, whatever first, only fetch no cache, always fetch)
- * 
- */
-// if('serviceWorker' in navigator){
-//   // Register service worker
-//   navigator.serviceWorker.register('/service-worker.js')
-//   .then(
-//     reg =>
-//       console.log("SW registration succeeded. Scope is "+reg.scope)
-//     ,err =>
-//       console.error("SW registration failed with error "+err)
-//   );
-// }
-
-// const send_message_to_sw = (msg) =>
-//   new Promise(
-//     (resolve, reject) => {
-//       // Create a Message Channel
-//       const msg_chan = new MessageChannel();
-
-//       // Handler for recieving message reply from service worker
-//       msg_chan.port1.onmessage = (event) => {
-//           if(event.data.error){
-//               reject(event.data.error);
-//           }else{
-//               resolve(event.data);
-//           }
-//       };
-
-//       // Send message to service worker along with port for reply
-//       navigator.serviceWorker.controller.postMessage(
-//         msg
-//         , [msg_chan.port2]
-//       );
-//   }
-// );
-
-// document.body.addEventListener(
-//   "click"
-//   ,()=>
-//     send_message_to_sw(
-//       {
-//         action:"delete"
-//         ,cache:/^v1$/
-//         ,url:/.*bundle.js$/
-//       }
-//     )
-//     .then(
-//       (msg)=>
-//         console.log("deleted:",msg)
-//     )
-// );
-// window.send_message_to_sw = send_message_to_sw;
