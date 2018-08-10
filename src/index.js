@@ -186,10 +186,7 @@ usage example:
 max2 = throttle(2);
 urls = [url1,url2,url3...url100]
 Promise.all(//even though a 100 promises are created, only 2 are active
-  urls.map(
-    url=>
-      max2(fetch)
-  )
+  urls.map(max2(fetch))
 )
 */
 const throttle = (max) => {
@@ -235,10 +232,7 @@ usage example:
 twoPerSecond = throttlePeriod(2,1000);
 urls = ["http://url1","http://url2",..."http://url100"];
 Promise.all(//even though a 100 promises are created only 2 per second will have throttle started
-  urls.map(
-    (url)=>
-      twoPerSecond(fetch)
-  )
+  urls.map(twoPerSecond(fetch))
 )
 */
 const throttlePeriod = (max, period) => {
@@ -299,10 +293,7 @@ urls = ["http://url1","http://url2",..."http://url100"];
 //even though a 100 promises are created only 2 per second will have throttle started
 //  and less if request takes longer than 2 seconds
 Promise.all(
-  urls.map(
-    (url)=>
-      twoPerSecondMax3Active(fetch)
-  )
+  urls.map(twoPerSecondMax3Active(fetch))
 )
 */
 const throttlePeriodAndActive = (
@@ -506,6 +497,24 @@ const Fail = function(reason) {
 };
 const isFail = (o) => (o && o.constructor) === Fail;
 const isNotFail = (o) => !isFail(o);
+/**
+example of Fail, isFail and isNotFail. If you do Promise.all(promises)
+the Fail value can be used to resolve all promises but still detect
+what promises rejected.
+the following example shows how an array of urls is throttled and all
+urls are processed, even if one fails it will continue
+Promise.all(//even though a 100 promises are created, only 2 are active
+  urls.map(
+    url=>
+      max2(fetch)(url).catch(e=>new Fail([url,e]))
+  ).then(//none of the promises will reject so his is always called
+    result=>{
+      const successes = result.filter(isNotFail);
+      const failed = result.filter(isFail);
+    }
+  )
+);
+ */
 const batchProcess = (handleBatchResult) => (batchSize) => (
   processor,
 ) => (result) => (items) =>
