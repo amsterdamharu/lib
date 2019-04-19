@@ -487,7 +487,7 @@ const memoize = fn => {
     );
     //no previous result, create a result
     if (!hasResult) {
-      previous = args.concat(fn(...args));
+      previous = args.concat([fn(...args)]);
     }
     //return previousl result
     return previous.slice(-1)[0];
