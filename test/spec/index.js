@@ -643,7 +643,6 @@ describe("memoize", function() {
     b = [3, 4];
   const args = [1, {}, 3, [4], 5, {}, [7]];
   const result = memoized(...args);
-  console.log("result is:", result);
   it("Should return the previous result", () => {
     expect(memoized(...args) === result).toBe(true);
   });
@@ -657,9 +656,9 @@ describe("memoize", function() {
     expect(memCalled).toBe(2);
   });
 
-  const r = lib.memoize((a, b) => [a, b])(a, b);
+  const [A, B] = lib.memoize((a, b) => [a, b])(a, b);
   it("Should recieve and return arrays correctly", () => {
-    expect(r[0] === a && r[1] === b).toBe(true);
+    expect(A === a && B === b).toBe(true);
   });
 });
 
