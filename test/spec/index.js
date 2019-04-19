@@ -650,6 +650,9 @@ describe("memoize", function() {
   it("Should not return the same result", () => {
     expect(memoized(1, 2, 3) === result).toBe(false);
   });
+  it("Should have called the function", () => {
+    expect(memCalled).toBe(2);
+  });
 });
 
 //@todo: test following added functions

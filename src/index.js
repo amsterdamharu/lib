@@ -478,27 +478,19 @@ const batchProcess = handleBatchResult => batchSize => processor => result => it
     );
 
 const memoize = fn => {
-  const map = new Map();
+  let previous = [];
   return (...args) => {
     //see if there is a previous result
-    const result = args
-      .concat(fn)
-      .reduce((map, arg) => map && map.get(arg), map);
+    const hasResult = args.reduce(
+      (result, arg, index) => result && previous[index] === arg,
+      true
+    );
     //no previous result, create a result
-    if (!result) {
-      map.clear();
-      const result = fn(...args);
-      args
-        .reduce((map, arg) => {
-          const m = new Map();
-          map.set(arg, m);
-          return m;
-        }, map)
-        .set(fn, result);
-      return result;
+    if (!hasResult) {
+      previous = args.concat(fn(...args));
     }
-    //return previously returned result
-    return result;
+    //return previousl result
+    return previous.slice(-1)[0];
   };
 };
 
