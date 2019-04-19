@@ -1,16 +1,14 @@
 //@ts-check
 //not exported, checks if a value could be like promise
-const promiseLike = (x) =>
-  x !== undefined && typeof x.then === 'function';
+const promiseLike = x => x !== undefined && typeof x.then === "function";
 //not exported, used to resolve a value later
 const later = (resolveValue, time = 500) =>
   new Promise((resolve, reject) =>
-    setTimeout((x) => resolve(resolveValue), time),
+    setTimeout(x => resolve(resolveValue), time)
   );
 //not exported, if x is promise then fn is called with the
 //  resolve of x
-const ifPromise = (fn) => (x) =>
-  promiseLike(x) ? x.then(fn) : fn(x);
+const ifPromise = fn => x => (promiseLike(x) ? x.then(fn) : fn(x));
 /**
  * takes time, error, function (fn) and argument (arg)
  * when fn(arg) returns a promise that does not resolve before
@@ -35,16 +33,14 @@ const ifPromise = (fn) => (x) =>
  *      ,reject => //handle reject, either myFunction failed or timed out
  *    )
  */
-const timedPromise = (time) => (error) => (fn) => (arg) =>
+const timedPromise = time => error => fn => arg =>
   queReject(
     Promise.race([
       queReject(Promise.resolve(arg).then(fn)),
       queReject(
-        new Promise((resolve, reject) =>
-          setTimeout((x) => reject(error), time),
-        ),
-      ),
-    ]),
+        new Promise((resolve, reject) => setTimeout(x => reject(error), time))
+      )
+    ])
   );
 /**
  * Do not have node crash or browser console shout at you
@@ -59,9 +55,9 @@ const timedPromise = (time) => (error) => (fn) => (arg) =>
  * //put the reject handler in the message queue
  * setTimeout(x => result.then(undefined,x=>x),10);
  */
-const queReject = (rejectValue) => {
+const queReject = rejectValue => {
   const r = Promise.resolve(rejectValue);
-  r.then((x) => x, (x) => x);
+  r.then(x => x, x => x);
   return r;
 };
 /**
@@ -91,19 +87,19 @@ const queReject = (rejectValue) => {
 const result = (() => {
   const SUCCESS = {},
     FAILURE = {},
-    createResult = (type) => (value) =>
+    createResult = type => value =>
       type !== SUCCESS
         ? {
             error: value,
-            succeeded: false,
+            succeeded: false
           }
         : {
             value: value,
-            succeeded: true,
+            succeeded: true
           };
   return {
-    success: (val) => createResult(SUCCESS)(val),
-    failure: (err) => createResult(FAILURE)(err),
+    success: val => createResult(SUCCESS)(val),
+    failure: err => createResult(FAILURE)(err)
   };
 })();
 /**
@@ -143,7 +139,7 @@ const result = (() => {
  * const userResult = userResultById(result.success(1));
  * if(userResult.succeeded === true) { ... } else { ... }
  */
-const liftResult = (processor) => (fn) => (arg) => {
+const liftResult = processor => fn => arg => {
   //do not call function if argument is of type Failure
   if (arg.succeeded !== true) {
     return arg;
@@ -163,8 +159,7 @@ const liftResult = (processor) => (fn) => (arg) => {
  * if both x and fn1(x) are promises:
  * x.then(x => fn1(x)).then(x => fn2(x))
  */
-const compose2 = (fn1) => (fn2) => (x) =>
-  ifPromise(fn2)(ifPromise(fn1)(x));
+const compose2 = fn1 => fn2 => x => ifPromise(fn2)(ifPromise(fn1)(x));
 
 /**
 turns an array of functions [fn1,fn2,fn3] into:
@@ -174,10 +169,10 @@ If it is a promise then the next function will be called with
 the resolve value of the promise.
 If the promise is rejected the next function is not called
 */
-const compose = (fns) =>
+const compose = fns =>
   fns.reduce(
     (acc, fn) => compose2(acc)(fn),
-    (x) => x, //id function
+    x => x //id function
   );
 /*
 causes a promise returning function not to be called
@@ -189,31 +184,26 @@ Promise.all(//even though a 100 promises are created, only 2 are active
   urls.map(max2(fetch))
 )
 */
-const throttle = (max) => {
+const throttle = max => {
   var que = [];
   var queIndex = -1;
   var running = 0;
-  const wait = (resolve, fn, arg) => () =>
-    resolve(ifPromise(fn)(arg)) || true; //should always return true
+  const wait = (resolve, fn, arg) => () => resolve(ifPromise(fn)(arg)) || true; //should always return true
   const nextInQue = () => {
     ++queIndex;
-    if (typeof que[queIndex] === 'function') {
+    if (typeof que[queIndex] === "function") {
       return que[queIndex]();
     } else {
       que = [];
       queIndex = -1;
       running = 0;
-      return 'Does not matter, not used';
+      return "Does not matter, not used";
     }
   };
   const queItem = (fn, arg) =>
-    new Promise((resolve, reject) =>
-      que.push(wait(resolve, fn, arg)),
-    );
-  return (fn) => (arg) => {
-    const p = queItem(fn, arg).then(
-      (x) => nextInQue() && x,
-    );
+    new Promise((resolve, reject) => que.push(wait(resolve, fn, arg)));
+  return fn => arg => {
+    const p = queItem(fn, arg).then(x => nextInQue() && x);
     running++;
     if (running <= max) {
       nextInQue();
@@ -244,11 +234,8 @@ const throttlePeriod = (max, period) => {
     started = undefined;
     periods = [];
   };
-  return (fn) => (arg) => {
-    started =
-      started === undefined
-        ? new Date().getTime()
-        : started;
+  return fn => arg => {
+    started = started === undefined ? new Date().getTime() : started;
     ++total;
     const now = new Date().getTime(),
       currentPeriod = Math.floor((now - started) / period);
@@ -263,18 +250,18 @@ const throttlePeriod = (max, period) => {
     return later(arg, next * period + 1)
       .then(fn)
       .then(
-        (x) => {
+        x => {
           if (--total === 0) {
             reset();
           }
           return x;
         },
-        (err) => {
+        err => {
           if (--total === 0) {
             reset();
           }
           return Promise.reject(err);
-        },
+        }
       );
   };
 };
@@ -296,14 +283,10 @@ Promise.all(
   urls.map(twoPerSecondMax3Active(fetch))
 )
 */
-const throttlePeriodAndActive = (
-  maxActive,
-  maxPeriod,
-  period,
-) => {
+const throttlePeriodAndActive = (maxActive, maxPeriod, period) => {
   const maxA = throttle(maxActive),
     maxP = throttlePeriod(maxPeriod, period);
-  return (fn) => (arg) =>
+  return fn => arg =>
     // maxP(x=>x)(arg)
     // .then(maxA(fn))
     maxA(fn)(arg);
@@ -315,7 +298,7 @@ const throttlePeriodAndActive = (
  * Not all values in the array need to be promises but anyPromise will resolve
  * with the first value that is not a promise if there are any.
  */
-const anyPromise = (promises) => {
+const anyPromise = promises => {
   let rec = (promises, rejected) =>
     promises.length === 0
       ? queReject(Promise.reject(rejected))
@@ -323,36 +306,28 @@ const anyPromise = (promises) => {
           promises.map(([p, orgIndex], index) =>
             queReject(
               new Promise((resolve, reject) =>
-                p.then(
-                  (x) => resolve(x),
-                  (y) => reject([y, orgIndex, index]),
-                ),
-              ),
-            ),
-          ),
+                p.then(x => resolve(x), y => reject([y, orgIndex, index]))
+              )
+            )
+          )
         ).then(
-          (ok) => ok,
+          ok => ok,
           ([no, orgIndex, index]) => {
             rejected[orgIndex] = no;
-            return rec(
-              promises.filter((p, i) => i !== index),
-              rejected,
-            );
-          },
+            return rec(promises.filter((p, i) => i !== index), rejected);
+          }
         );
   if (!Array.isArray(promises)) {
-    return Promise.reject(
-      'The parameter passed should be an array',
-    );
+    return Promise.reject("The parameter passed should be an array");
   }
   if (promises.length === 0) {
     return Promise.reject(
-      'Empty array passed as promises, do not know how to resolve this.',
+      "Empty array passed as promises, do not know how to resolve this."
     );
   }
   return rec(
     promises.map((x, index) => [Promise.resolve(x), index]),
-    promises.map((x) => 'wuh?'),
+    promises.map(x => "wuh?")
   );
 };
 /**
@@ -365,7 +340,7 @@ const anyPromise = (promises) => {
 const range = (start, end, step = 1) => {
   const min = start - step;
   return [...new Array(Math.floor((end - min) / step))].map(
-    (val, index) => min + step * (index + 1),
+    (val, index) => min + step * (index + 1)
   );
 };
 /**
@@ -396,13 +371,8 @@ const range = (start, end, step = 1) => {
  *   )
  * );
  */
-const onlyLastRequestedPromise = ((promiseIds) => {
-  const whenResolve = (
-    promise,
-    id,
-    promiseID,
-    resolveValue,
-  ) => {
+const onlyLastRequestedPromise = (promiseIds => {
+  const whenResolve = (promise, id, promiseID, resolveValue) => {
     if (promise !== undefined) {
       //called by user adding a promise
       promiseIds[id] = {};
@@ -410,21 +380,15 @@ const onlyLastRequestedPromise = ((promiseIds) => {
       //called because promise is resolved
       return promiseID === promiseIds[id]
         ? Promise.resolve(resolveValue)
-        : Promise.reject('A newer request was made.');
+        : Promise.reject("A newer request was made.");
     }
     return (function(currentPromiseID) {
       return promise.then(function(result) {
-        return whenResolve(
-          undefined,
-          id,
-          currentPromiseID,
-          result,
-        );
+        return whenResolve(undefined, id, currentPromiseID, result);
       });
     })(promiseIds[id]);
   };
-  return (id = 'general') => (promise) =>
-    whenResolve(promise, id);
+  return (id = "general") => promise => whenResolve(promise, id);
 })({});
 /*
  * This is like d3 scale, if we have a range from 5 to 10 and the domain is 0 to 1
@@ -434,22 +398,15 @@ const onlyLastRequestedPromise = ((promiseIds) => {
  * const moveScale = scale(0)(1)(100)(200);
  * after one second (half of the period) the number representing time passed is 0.5
  * moveScale(0.5);//results in 150 (150px)
-*/
-const scale = (domainMin) => (domainMax) => (scaleMin) => (
-  scaleMax,
-) => (num) =>
-  (num / (domainMax - domainMin)) * (scaleMax - scaleMin) +
-  scaleMin;
+ */
+const scale = domainMin => domainMax => scaleMin => scaleMax => num =>
+  (num / (domainMax - domainMin)) * (scaleMax - scaleMin) + scaleMin;
 const REPLACE = {};
 const SAVE = {};
-const createThread = (saved = []) => (fn, action) => (
-  arg,
-) => {
-  const processResult = (result) => {
-    const addAndReturn = (result) => {
-      action === SAVE
-        ? (saved = saved.concat([result]))
-        : false;
+const createThread = (saved = []) => (fn, action) => arg => {
+  const processResult = result => {
+    const addAndReturn = result => {
+      action === SAVE ? (saved = saved.concat([result])) : false;
       action === REPLACE ? (saved = [result]) : false;
       return result;
     };
@@ -458,34 +415,28 @@ const createThread = (saved = []) => (fn, action) => (
       : addAndReturn(result);
   };
   return promiseLike(arg)
-    ? arg
-        .then((result) => fn(saved.concat([result])))
-        .then(processResult)
+    ? arg.then(result => fn(saved.concat([result]))).then(processResult)
     : processResult(fn(saved.concat([arg])));
 };
-const threadResultsOnly = (thread) => (fn, action) => (
-  threadedResults,
-) =>
+const threadResultsOnly = thread => (fn, action) => threadedResults =>
   thread(
     //not interested in threaded values, only results of previous one
-    (threadedResults) => fn(threadedResults.slice(-1)[0]),
-    action,
+    threadedResults => fn(threadedResults.slice(-1)[0]),
+    action
   )(threadedResults);
-const formatObject = (doForKey) => (doWithKey) => (
-  object,
-) => {
-  const recur = (object) =>
+const formatObject = doForKey => doWithKey => object => {
+  const recur = object =>
     Object.assign(
       {},
       object,
       Object.keys(object).reduce((o, key) => {
-        object[key] && typeof object[key] === 'object'
+        object[key] && typeof object[key] === "object"
           ? (o[key] = recur(object[key]))
           : doForKey(key)
-            ? (o[key] = doWithKey(object, key))
-            : (o[key] = object[key]);
+          ? (o[key] = doWithKey(object, key))
+          : (o[key] = object[key]);
         return o;
-      }, {}),
+      }, {})
     );
   return recur(object);
 };
@@ -495,8 +446,8 @@ const formatObject = (doForKey) => (doWithKey) => (
 const Fail = function(reason) {
   this.reason = reason;
 };
-const isFail = (o) => (o && o.constructor) === Fail;
-const isNotFail = (o) => !isFail(o);
+const isFail = o => (o && o.constructor) === Fail;
+const isNotFail = o => !isFail(o);
 /**
 example of Fail, isFail and isNotFail. If you do Promise.all(promises)
 the Fail value can be used to resolve all promises but still detect
@@ -515,20 +466,41 @@ Promise.all(//even though a 100 promises are created, only 2 are active
   )
 );
  */
-const batchProcess = (handleBatchResult) => (batchSize) => (
-  processor,
-) => (result) => (items) =>
+const batchProcess = handleBatchResult => batchSize => processor => result => items =>
   Promise.all(items.slice(0, batchSize).map(processor))
     .then(handleBatchResult)
     .then(
       //recursively call itself with next batch
-      (batchResult) =>
-        batchProcess(handleBatchResult)(batchSize)(
-          processor,
-        )(result.concat(batchResult))(
-          items.slice(batchSize),
-        ),
+      batchResult =>
+        batchProcess(handleBatchResult)(batchSize)(processor)(
+          result.concat(batchResult)
+        )(items.slice(batchSize))
     );
+
+const memoize = fn => {
+  const map = new Map();
+  return (...args) => {
+    //see if there is a previous result
+    const result = args
+      .concat(fn)
+      .reduce((map, arg) => map && map.get(arg), map);
+    //no previous result, create a result
+    if (!result) {
+      map.clear();
+      const result = fn(...args);
+      args
+        .reduce((map, arg) => {
+          const m = new Map();
+          map.set(arg, m);
+          return m;
+        }, map)
+        .set(fn, result);
+      return result;
+    }
+    //return previously returned result
+    return result;
+  };
+};
 
 export {
   compose,
@@ -552,4 +524,5 @@ export {
   isFail,
   isNotFail,
   batchProcess,
+  memoize
 };
