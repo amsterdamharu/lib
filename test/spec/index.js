@@ -655,6 +655,12 @@ describe("memoize", function() {
   it("Should have called the function", () => {
     expect(memCalled).toBe(2);
   });
+  it("Should not return the same result if args are less than previous", () => {
+    expect(memoized(1, 2) === result).toBe(false);
+  });
+  it("Should have called the function if args are less than previous", () => {
+    expect(memCalled).toBe(3);
+  });
 
   const [A, B] = lib.memoize((a, b) => [a, b])(a, b);
   it("Should recieve and return arrays correctly", () => {
